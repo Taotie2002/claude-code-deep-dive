@@ -1,0 +1,49 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [1.1.0] - 2026-04-02 (v1.1)
+
+### Added
+- **源码依据小节**：在第4、7、10、11、13章末尾增加源码依据表格（共56条引用）
+- **系统架构总览**：[architecture-overview.md](./architecture-overview.md) - 4张Mermaid架构图
+- **系统行为分析**：[behavior-analysis.md](./behavior-analysis.md) - 7个行为流程图
+- **隐藏功能与发现**：[hidden-features.md](./hidden-features.md) - 8类发现（KAIROS、Dream、Swarm等）
+- **第4.7节：模块层次深度分析** - 五层模块框架
+
+### Improved
+- **Mermaid图升级**：12处架构图升级为GitHub原生Mermaid格式
+- **调度机制分析**：补充Agent调度流程
+- **模块划分分析**：新增五层框架（Agent/Prompt/Tool/Memory/Runtime）
+
+## [1.0.0] - 2026-04-02 (v1.0)
+
+### Added
+- **主内容**：[claude-code-deep-dive.md](./claude-code-deep-dive.md) - 20章+附录（~10,000行）
+- **Mini Claude Code Demo**：[mini-claude-code/](./mini-claude-code/) - ~1700行Python代码
+- **PDF版本**：[claude-code-deep-dive.pdf](./claude-code-deep-dive.pdf)
+- **README.md** - 项目导航页
+- **LICENSE** - MIT License
+- **CONTRIBUTING.md** - 贡献指南
+
+---
+
+## 项目结构
+
+```
+claude-code-deep-dive/
+├── README.md                    # 项目首页
+├── CHANGELOG.md               # 版本日志
+├── claude-code-deep-dive.md    # 主内容（20章+附录）
+├── claude-code-deep-dive.pdf   # PDF版本
+├── architecture-overview.md     # 系统架构总览 🆕
+├── behavior-analysis.md         # 系统行为分析 🆕
+├── hidden-features.md          # 隐藏功能与发现 🆕
+├── mini-claude-code/           # Mini Demo 🆕
+│   ├── agent.py
+│   ├── tools.py
+│   ├── memory.py
+│   └── main.py
+├── LICENSE
+└── CONTRIBUTING.md
+```

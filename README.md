@@ -91,6 +91,16 @@ python main.py
 
 ---
 
+## 📚 扩展文档
+
+| 文档 | 说明 |
+|------|------|
+| [architecture-overview.md](./architecture-overview.md) | 系统架构总览（4张Mermaid图） |
+| [behavior-analysis.md](./behavior-analysis.md) | 系统行为分析（7个行为流程图） |
+| [hidden-features.md](./hidden-features.md) | 隐藏功能与源码发现（8类发现） |
+
+---
+
 ## 📊 项目状态
 
 | 维度 | 评分 |
