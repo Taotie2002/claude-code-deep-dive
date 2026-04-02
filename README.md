@@ -1,6 +1,6 @@
-# Claude Code 源码解读
+# Claude Code 行为分析与架构推演
 
-> 从源码深处理解 AI 编程工具的设计哲学与工程实践
+> 通过黑盒观测与工程经验，探索 AI 编程工具的设计哲学与工程实践
 
 ---
 
@@ -8,12 +8,12 @@
 
 **本项目纯属个人学习与技术研究目的**，**不代表 Anthropic 官方立场**，**与 Anthropic 公司无任何关联**。
 
-- 本项目基于公开渠道获取的 Claude Code 相关信息及社区讨论进行**架构分析与技术解读**，旨在帮助开发者理解 AI 编程工具的工程设计理念与最佳实践。
+- 本项目基于公开渠道获取的 Claude Code 相关信息及社区讨论进行**黑盒行为分析与架构推演**，旨在帮助开发者理解 AI 编程工具的工程设计理念与最佳实践。
 - 项目中所有代码、文档、Mini Demo 均为**原创教学示例**，供学习参考使用。
-- 本项目**不提供任何 Claude Code 原始源码**，也不鼓励或支持任何侵犯知识产权、违反服务条款或泄露商业机密的行为。
+- 本项目**不提供任何 Claude Code 原始源码**，也不鼓励或支持任何侵犯知识产权的行为。
 - 作者已尽最大努力确保内容基于公开信息，但**不保证信息的完整性、准确性或时效性**。
 - **使用本项目及其内容完全由用户自行承担风险**。
-- 如您发现本项目内容可能涉及知识产权问题，请及时联系作者，我们将立即处理。
+- 如发现知识产权问题，请联系作者处理。
 
 本项目遵循 [MIT License](LICENSE) 开源，仅供**非商业、教育和研究**用途。
 
@@ -23,7 +23,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/Taotie2002/claude-code-deep-dive)](https://github.com/Taotie2002/claude-code-deep-dive/graphs/contributors)
 
-这是一本基于 Claude Code **公开信息与社区讨论**的系统性技术教程。通过对 Claude Code 架构的深入分析，探讨 AI 编程工具的架构设计、工程实践与设计哲学。
+这是一本基于 Claude Code **公开信息与社区讨论**的系统性技术教程，通过黑盒观测与架构推演，探讨 AI 编程工具的架构设计、工程实践与设计哲学。
 
 ---
 
@@ -33,64 +33,40 @@
 |------|------|
 | **前置知识（第0章）** | 理解本书所需的背景知识铺垫 |
 | **核心正文（第1-20章）** | 从产品定位到多 Agent 协作的全链路分析 |
-| **附录** | 术语表与源码索引，方便快速定位 |
+| **架构分析（docs/）** | 系统架构、行为分析、设计哲学文档 |
 
 ---
 
 ## 📖 目录导航
 
-### 第一部分：核心理念
+### 核心内容（docs/）
+
+| 文档 | 说明 |
+|------|------|
+| [docs/01-architecture.md](./docs/01-architecture.md) | 系统架构总览 |
+| [docs/02-agent-behavior.md](./docs/02-agent-behavior.md) | Agent行为分析 |
+| [docs/03-query-engine.md](./docs/03-query-engine.md) | QueryEngine剖析 |
+| [docs/04-agent-lifecycle.md](./docs/04-agent-lifecycle.md) | Agent生命周期 |
+| [docs/05-system-behavior.md](./docs/05-system-behavior.md) | 系统行为总结 |
+| [docs/06-data-flow.md](./docs/06-data-flow.md) | 数据流分析 |
+| [docs/07-system-design.md](./docs/07-system-design.md) | 系统设计总结 |
+| [docs/08-hidden-features.md](./docs/08-hidden-features.md) | 隐藏功能与发现 |
+| [docs/09-comparison.md](./docs/09-comparison.md) | 与其他Agent对比 |
+
+### 主文档
 
 | 章节 | 标题 |
 |------|------|
 | 第0章 | [前置知识](./claude-code-deep-dive.md#第-0-章-前置知识) |
 | 第一章 | [产品哲学与定位](./claude-code-deep-dive.md#第一章-产品哲学与定位) |
-| 第二章 | [设计哲学与原则](./claude-code-deep-dive.md#第二章-设计哲学与原则) |
-| 第三章 | [人机关系与 Buddy 设计](./claude-code-deep-dive.md#第三章-人机关系与buddy设计) |
-
-### 第二部分：架构全景
-
-| 章节 | 标题 |
-|------|------|
-| 第四章 | [系统架构全貌](./claude-code-deep-dive.md#第四章-系统架构全貌) |
-| 第五章 | [入口设计与短路径](./claude-code-deep-dive.md#第五章-入口设计与短路径) |
-| 第六章 | [技术栈选型](./claude-code-deep-dive.md#第六章-技术栈选型) |
-| 第七章 | [工具系统架构](./claude-code-deep-dive.md#第七章-工具系统架构) |
-
-### 第三部分：安全与权限
-
-| 章节 | 标题 |
-|------|------|
-| 第八章 | [安全权限体系](./claude-code-deep-dive.md#第八章-安全权限体系) |
-| 第九章 | [上下文管理与缓存](./claude-code-deep-dive.md#第九章-上下文管理与缓存) |
-
-### 第四部分：智能与记忆
-
-| 章节 | 标题 |
-|------|------|
-| 第十章 | [记忆系统](./claude-code-deep-dive.md#第十章-记忆系统) |
-| 第十一章 | [Multi-Agent 协同](./claude-code-deep-dive.md#第十一章-multi-agent-协同) |
-| 第十二章 | [并行与 UDS 通信](./claude-code-deep-dive.md#第十二章-并行与uds通信) |
-| 第十三章 | [KAIROS 与分布式调度](./claude-code-deep-dive.md#第十三章-kairos-与分布式调度) |
-
-### 第五部分：工程实践
-
-| 章节 | 标题 |
-|------|------|
-| 第十四章 | [Feature Flag 体系](./claude-code-deep-dive.md#第十四章-feature-flag-体系) |
-| 第十五章 | [性能优化实践](./claude-code-deep-dive.md#第十五章-性能优化实践) |
-| 第十六章 | [测试与质量保证](./claude-code-deep-dive.md#第十六章-测试与质量保证) |
-| 第十七章 | [实操 · 从零构建 Agent 工具](./claude-code-deep-dive.md#第十七章-实操从零构建-agent-工具) |
-| 第十八章 | [实操 · 安全设计模式](./claude-code-deep-dive.md#第十八章-实操安全设计模式) |
-| 第十九章 | [成本控制策略](./claude-code-deep-dive.md#第十九章-成本控制策略) |
-| 第二十章 | [多 Agent 设计模式](./claude-code-deep-dive.md#第二十章-多-agent-设计模式) |
+| ... | ... |
 
 ### 附录
 
-| 附录 | 标题 |
+| 附录 | 说明 |
 |------|------|
-| 附录 A | [术语表](./claude-code-deep-dive.md#附录-a术语表) |
-| 附录 B | [源码索引表](./claude-code-deep-dive.md#附录-b源码索引表) |
+| [附录A](./claude-code-deep-dive.md#附录-a术语表) | 术语表 |
+| [附录B](./claude-code-deep-dive.md#附录-b源码索引表) | 源码索引表 |
 
 ---
 
@@ -108,32 +84,12 @@ python main.py
 
 ---
 
-## 📚 扩展文档（必读）
+## 📦 产物
 
-| 文档 | 说明 |
+| 产物 | 位置 |
 |------|------|
-| ⭐ [architecture-overview.md](./architecture-overview.md) | **系统架构总览** - 强烈建议先读 |
-| ⭐ [system-design.md](./system-design.md) | **系统设计总结** - 设计哲学+架构决策 |
-| ⭐ [comparison.md](./comparison.md) | 🆕 **Agent对比分析** - Claude Code vs 主流工具 |
-| [query-engine-deep-dive.md](./query-engine-deep-dive.md) | QueryEngine核心剖析 |
-| [agent-lifecycle.md](./agent-lifecycle.md) | Agent生命周期 |
-| [behavior-analysis.md](./behavior-analysis.md) | 行为分析 |
-| [hidden-features.md](./hidden-features.md) | 隐藏功能与发现 |
-| [data-flow-analysis.md](./data-flow-analysis.md) | 数据流分析 |
-| [system-behavior.md](./system-behavior.md) | 系统行为总结 |
-
----
-
-## 📊 项目状态
-
-| 维度 | 评分 |
-|------|------|
-| 技术准确性 | ⭐⭐⭐⭐⭐ |
-| 源码深度 | ⭐⭐⭐⭐⭐ |
-| 架构分析 | ⭐⭐⭐⭐⭐ |
-| 工程价值 | ⭐⭐⭐⭐（新增Demo） |
-
-**基于外部专家评审持续改进中**
+| PDF版本 | [assets/claude-code-deep-dive.pdf](./assets/claude-code-deep-dive.pdf) |
+| Mini Demo | [mini-claude-code/](./mini-claude-code/) |
 
 ---
 

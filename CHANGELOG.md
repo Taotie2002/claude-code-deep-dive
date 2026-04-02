@@ -2,20 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2026-04-02 (v1.7)
+
+### Changed
+- **叙事调整**: 从"源码解读"转变为"行为分析与架构推演"
+  - 标题: Claude Code 源码解读 → Claude Code 行为分析与架构推演
+  - 强调黑盒观测与工程经验反推
+  - 降低法律风险
+
+- **目录结构优化**: 建立 docs/ 目录
+  - docs/01-architecture.md ~ 09-comparison.md
+  - 主文档 claude-code-deep-dive.md 保持独立
+
+- **PDF产物分离**: PDF 移至 assets/ 目录，通过 GitHub Releases 分发
+
+### Fixed
+- .gitignore 更新，PDF 不纳入版本控制
+
+---
+
 ## [1.6.0] - 2026-04-02 (v1.6)
 
 ### Added
 - **GitHub Actions CI**: [.github/workflows/ci.yml](./.github/workflows/ci.yml)
-  - ruff lint check
-  - pytest test runner
 - **pyproject.toml**: [mini-claude-code/pyproject.toml](./mini-claude-code/pyproject.toml)
-  - 包管理配置
-  - ruff lint规则
-  - pytest配置
 - **pytest基础测试**: [tests/test_tools.py](./mini-claude-code/tests/test_tools.py)
 
 ### Fixed
-- **免责声明同步**: 在 claude-code-deep-dive.md 和 architecture-overview.md 开头添加免责
+- 免责声明同步
 
 ---
 

@@ -1,3 +1,6 @@
 # Claude Code textbook - internal files
 oold_versions/
 mini-claude-code/__pycache__/
+
+# PDF产物通过Releases分发
+*.pdf
