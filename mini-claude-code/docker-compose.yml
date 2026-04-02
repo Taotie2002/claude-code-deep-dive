@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  agent:
+    build: .
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - MOCK_API_URL=http://mock_api:8080
+    volumes:
+      - ./workdir:/app/workdir
+    depends_on:
+      - mock_api
+    stdin_open: true
+    tty: true
+
+  mock_api:
+    build: ./mock_api
+    ports:
+      - "8080:8080"

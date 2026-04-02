@@ -1,4 +1,1 @@
-# Mini Claude Code Dependencies
-
-# Claude API Client
-anthropic>=0.18.0
+flask==3.0.0

@@ -1,0 +1,236 @@
+name: LLM-as-Judge Evaluation
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      judge_model:
+        description: 'Judge Model'
+        required: false
+        default: 'gpt-4o'
+      test_suite:
+        description: 'Test Suite'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - correctness
+          - safety
+          - style
+          - quick
+
+env:
+  JUDGE_MODEL: ${{ inputs.judge_model || 'gpt-4o' }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  # ============================================================
+  # Job 1: 单元测试 + Lint
+  # ============================================================
+  unit-test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -q pytest pytest-cov
+          pip install -q openai anthropic
+
+      - name: Run unit tests
+        run: |
+          pytest tests/ -v --tb=short -k "not llm"
+
+  # ============================================================
+  # Job 2: LLM-as-Judge 正确性评测
+  # ============================================================
+  eval-correctness:
+    name: Eval - Correctness
+    runs-on: ubuntu-latest
+    needs: unit-test
+    if: ${{ inputs.test_suite == 'full' || inputs.test_suite == 'quick' || inputs.test_suite == 'correctness' || github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -q openai anthropic
+
+      - name: Run Correctness Evaluation
+        id: eval
+        run: |
+          python -m tests.test_llm_as_judge \
+            --file tests/test_target/sample_code.py \
+            --expected "返回排序后的列表" \
+            --dimension correctness \
+            --model ${{ env.JUDGE_MODEL }} \
+            --output eval_results/correctness.json
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-correctness-results
+          path: eval_results/correctness.json
+
+      - name: Post-comment on PR
+        if: github.event_name == 'pull_request'
+        run: |
+          python .github/workflows/comment_results.py \
+            --file eval_results/correctness.json \
+            --job "正确性评测"
+
+  # ============================================================
+  # Job 3: LLM-as-Judge 安全性评测
+  # ============================================================
+  eval-safety:
+    name: Eval - Safety
+    runs-on: ubuntu-latest
+    needs: unit-test
+    if: ${{ inputs.test_suite == 'full' || inputs.test_suite == 'quick' || inputs.test_suite == 'safety' || github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -q openai anthropic
+
+      - name: Run Safety Evaluation
+        run: |
+          python -m tests.test_llm_as_judge \
+            --file tests/test_target/sample_code.py \
+            --dimension safety \
+            --model ${{ env.JUDGE_MODEL }} \
+            --output eval_results/safety.json
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-safety-results
+          path: eval_results/safety.json
+
+  # ============================================================
+  # Job 4: LLM-as-Judge 风格评测
+  # ============================================================
+  eval-style:
+    name: Eval - Style
+    runs-on: ubuntu-latest
+    needs: unit-test
+    if: ${{ inputs.test_suite == 'full' || inputs.test_suite == 'quick' || inputs.test_suite == 'style' || github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -q openai anthropic
+
+      - name: Run Style Evaluation
+        run: |
+          python -m tests.test_llm_as_judge \
+            --file tests/test_target/sample_code.py \
+            --dimension style \
+            --model ${{ env.JUDGE_MODEL }} \
+            --output eval_results/style.json
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-style-results
+          path: eval_results/style.json
+
+  # ============================================================
+  # Job 5: 综合报告 + Gate
+  # ============================================================
+  eval-report:
+    name: Eval Report & Gate
+    runs-on: ubuntu-latest
+    needs: [eval-correctness, eval-safety, eval-style]
+    if: ${{ always() && (needs.eval-correctness.result == 'success' || needs.eval-safety.result == 'success' || needs.eval-style.result == 'success') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: eval_results
+
+      - name: Generate Report
+        id: report
+        run: |
+          python .github/workflows/generate_report.py \
+            --results-dir eval_results \
+            --output eval_results/summary.json
+
+      - name: Upload Summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-summary
+          path: eval_results/summary.json
+
+      - name: Check Pass Gate
+        run: |
+          python .github/workflows/check_gate.py \
+            --summary eval_results/summary.json \
+            --threshold 0.7
+        env:
+          GITHUB_OUTPUT: ${{ env.GITHUB_OUTPUT }}
+
+      - name: Post summary comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = JSON.parse(fs.readFileSync('eval_results/summary.json', 'utf8'));
+            const { execSync } = require('child_process');
+
+            const body = `
+            ## 📊 LLM-as-Judge 评测报告
+
+            | 维度 | 评分 | 状态 |
+            |------|------|------|
+            | 正确性 | ${summary.dimensions.correctness?.score || 'N/A'} | ${summary.dimensions.correctness?.passed ? '✅' : '❌'} |
+            | 安全性 | ${summary.dimensions.safety?.score || 'N/A'} | ${summary.dimensions.safety?.passed ? '✅' : '❌'} |
+            | 风格 | ${summary.dimensions.style?.score || 'N/A'} | ${summary.dimensions.style?.passed ? '✅' : '❌'} |
+
+            **综合评分: ${summary.overall_score} (${summary.pass_rate}%)**
+
+            ${summary.passed ? '✅ 通过评测门禁' : '❌ 未通过评测门禁 (阈值: 0.7)'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
