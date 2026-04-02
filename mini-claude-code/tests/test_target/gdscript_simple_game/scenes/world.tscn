@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://cworld456"]
+
+[ext_resource type="PackedScene" uid="uid://bvc123player" path="res://scenes/player.tscn" id="1_player"]
+
+[node name="World" type="Node2D"]
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector2(640, 360)
+
+[node name="Camera2D" type="Camera2D" parent="Player"]

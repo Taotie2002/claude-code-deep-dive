@@ -630,6 +630,393 @@ stateDiagram-v2
 
 ---
 
+## 7. 断点续传设计（Checkpoint & Resume）
+
+断点续传是长时任务的关键可靠性机制，通过将执行状态持久化到稳定存储，使得 Agent 进程意外中断后能够从上一次快照点恢复执行，而非从头开始。
+
+### 7.1 为什么需要断点续传
+
+| 场景 | 无断点续传 | 有断点续传 |
+|------|------------|------------|
+| 网络中断 | 任务完全失败，需从头重来 | 从上一个快照恢复 |
+| 进程崩溃 | 上下文全部丢失 | 状态完整恢复 |
+| 超时中断 | 已完成的工作全部丢失 | 已完成部分保留 |
+| 资源抢占 | 被迫终止，无任何产出 | 保存检查点，可下次继续 |
+
+### 7.2 Context 快照机制
+
+#### 7.2.1 Token Context 序列化
+
+Context 快照的核心是将 LLM 对话上下文（包括系统提示、历史消息、工具定义）转换为可持久化的二进制或文本格式：
+
+```mermaid
+flowchart TD
+    A[对话上下文] --> B{序列化格式选择}
+
+    B -->|短上下文<br/>&lt;32K tokens| C[JSON 压缩<br/>gzip]
+    B -->|中等上下文<br/>32K-128K| D[二进制 Protocol Buffer<br/>分块存储]
+    B -->|长上下文<br/>>128K| E[向量压缩<br/>语义摘要 + 原始片段索引]
+
+    C --> F[写入检查点文件]
+    D --> F
+    E --> F
+
+    F --> G[计算 Content Hash]
+    G --> H[生成 Checkpoint Manifest<br/>版本号 + 时间戳 + hash]
+    H --> I[持久化到磁盘]
+```
+
+**序列化字段：**
+
+```
+CheckpointManifest {
+    version: string          // 快照格式版本
+    timestamp: ISO8601       // 快照时间
+    content_hash: string     // 内容完整性校验
+    model: string            // LLM 模型标识
+    total_tokens: int        // 当前 token 总数
+    messages: Message[]      // 对话历史
+    tool_definitions: Tool[] // 当前工具定义
+    system_prompt: string     // 系统提示（可选截断）
+    metadata: JSON            // 附加元数据
+}
+```
+
+#### 7.2.2 存储位置
+
+| 存储后端 | 适用场景 | 优点 | 缺点 |
+|----------|----------|------|------|
+| **SQLite** | 单机、中等规模 | 轻量、事务保证、零配置 | 并发写入受限 |
+| **向量库 (Qdrant/Pinecone)** | 超长上下文、语义检索 | 支持语义相似度查询 | 额外依赖 |
+| **文件系统** | 临时检查点、快速恢复 | 简单直接 | 无查询能力 |
+| **对象存储 (S3)** | 分布式、跨机器恢复 | 持久化、高可用 | 延迟较高 |
+
+**SQLite 存储设计：**
+
+```sql
+CREATE TABLE checkpoints (
+    id              TEXT PRIMARY KEY,    -- checkpoint UUID
+    agent_id        TEXT NOT NULL,       -- 所属 Agent ID
+    session_id      TEXT NOT NULL,       -- 会话 ID
+    version         INTEGER NOT NULL,    -- 版本号（递增）
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- 核心快照数据
+    context_blob    BLOB NOT NULL,       -- 压缩后的上下文
+    context_hash    TEXT NOT NULL,       -- SHA-256 校验
+    token_count     INTEGER NOT NULL,
+
+    -- 关联状态
+    tool_stack      TEXT,                -- JSON: 工具调用栈
+    execution_index INTEGER DEFAULT 0,  -- 已完成执行步骤索引
+    pending_queue   TEXT,                -- JSON: 待执行任务队列
+
+    -- 元数据
+    metadata        JSON,
+    parent_checkpoint_id TEXT            -- 上一个检查点（链式）
+);
+
+CREATE INDEX idx_agent_session ON checkpoints(agent_id, session_id);
+CREATE INDEX idx_created ON checkpoints(created_at);
+```
+
+#### 7.2.3 快照触发条件
+
+```mermaid
+flowchart TD
+    A[执行循环] --> B{触发条件检测}
+
+    B -->|T1: 固定间隔| C[每 N 个执行步骤]
+    C --> D[创建快照]
+    B -->|T2: 关键节点| E[工具调用前/后]
+    E --> D
+    B -->|T3: 资源阈值| F[Token 接近上限<br/>内存使用过高]
+    F --> D
+    B -->|T4: 外部信号| G[用户主动保存<br/>调度器暂停]
+    G --> D
+
+    D --> E2[序列化 Context]
+    E2 --> F2[写入存储]
+    F2 --> G2[生成 Manifest]
+    G2 --> H[快照完成]
+
+    B -->|无触发| I[继续执行]
+```
+
+| 触发类型 | 条件 | 理由 |
+|----------|------|------|
+| **步骤间隔** | 每 5-20 个工具调用 | 平衡恢复粒度与存储开销 |
+| **Token 阈值** | context 达到模型上限的 80% | 防止上下文溢出，必须压缩或快照 |
+| **关键操作前** | 执行文件写入、网络请求前 | 确保关键操作的原子性 |
+| **用户主动** | 用户发送中断/保存信号 | 立即响应用户意图 |
+| **异常检测** | 连续错误次数达到阈值 | 保留失败前的完整状态供分析 |
+
+### 7.3 执行堆栈持久化
+
+#### 7.3.1 工具调用链状态保存
+
+Agent 的执行堆栈包含多个层次的运行时状态：
+
+```mermaid
+flowchart LR
+    subgraph Stack["执行堆栈"]
+        direction TB
+        L1[外层 Agent<br/>会话级状态]
+        L2[中层 任务分解器<br/>子任务队列]
+        L3[内层 工具调用<br/>函数调用栈]
+        L4[最内 工具内部状态<br/>临时变量]
+    end
+
+    L1 --> L2
+    L2 --> L3
+    L3 --> L4
+```
+
+**堆栈持久化结构：**
+
+```
+ExecutionStack {
+    depth: int                    // 调用深度
+    frames: Frame[]               // 调用帧数组
+
+    Frame {
+        frame_id: UUID
+        agent_id: string          // 对应 Agent
+        task_description: string   // 当前任务描述
+        pending_tools: ToolCall[] // 待执行工具队列
+        completed_tools: ToolCall[]// 已完成工具记录
+
+        local_vars: JSON          // 局部变量快照
+        call_history: CallRecord[]// 调用历史
+
+        checkpoint_ref: string    // 关联的 Context 快照 ID
+    }
+}
+```
+
+#### 7.3.2 重启后恢复流程
+
+```mermaid
+sequenceDiagram
+    participant Agent as Agent进程
+    participant Checkpoint as Checkpoint Manager
+    participant Storage as 持久化存储
+    participant LLM as LLM Engine
+
+    Note over Agent: 进程启动 / 中断恢复
+    Agent->>Checkpoint: 请求恢复
+    Checkpoint->>Storage: 查询最新有效检查点
+
+    Storage-->>Checkpoint: 返回 Checkpoint Manifest
+    Checkpoint->>Checkpoint: 校验 hash 完整性
+
+    alt 检查点有效
+        Checkpoint->>Storage: 读取 context_blob
+        Storage-->>Checkpoint: 返回压缩上下文
+        Checkpoint->>Checkpoint: 解压缩反序列化
+
+        Checkpoint->>Agent: 恢复 ExecutionStack
+        Agent->>Agent: 重建运行时状态
+
+        Checkpoint->>Agent: 恢复 pending_tools 队列
+        Agent->>Agent: 重置任务游标
+
+        Note over Agent: 从上一次工具调用点继续执行
+        Agent->>LLM: 发送恢复提示词
+        LLM-->>Agent: 确认恢复上下文
+
+        Agent->>Agent: 继续执行 pending_tools
+    else 检查点损坏 / 不存在
+        Checkpoint-->>Agent: 恢复失败
+        Note over Agent: 回退到任务起点或提示用户
+    end
+```
+
+### 7.4 断点续传流程图
+
+```mermaid
+flowchart TD
+    A[Agent 启动] --> B{存在有效检查点?}
+
+    B -->|是| C[加载最新检查点]
+    B -->|否| D[从头开始新会话]
+
+    C --> E[校验快照完整性]
+    E -->|有效| F[恢复 Context + Stack]
+    E -->|损坏| G[提示用户<br/>选择重试或放弃]
+
+    F --> H[重建执行状态]
+    H --> I[获取 pending_tools 队列]
+    I --> J[继续执行下一个工具]
+
+    D --> K[初始化新上下文]
+    K --> L[开始正常执行]
+
+    J --> L
+
+    L --> M{执行中}
+
+    M -->|每 N 步| N[创建快照]
+    M -->|Token 接近上限| N
+    M -->|关键操作前| N
+    M -->|用户中断| N
+
+    N --> O[序列化 Context]
+    O --> P[持久化到存储]
+    P --> Q[更新 Manifest]
+
+    M -->|正常完成| R[标记会话完成<br/>删除旧检查点]
+    M -->|致命错误| S[保存最终状态<br/>记录错误日志]
+
+    Q --> L
+    R --> [*]
+    S --> [*]
+```
+
+### 7.5 状态机持久化图
+
+```mermaid
+stateDiagram-v2
+    [*] --> Active
+
+    Active --> Checkpointing: 触发快照
+    Checkpointing --> Active: 快照完成
+
+    Active --> Paused: 暂停信号
+    Paused --> Restoring: 恢复信号
+    Restoring --> Active: 状态恢复完成
+
+    Active --> Running: 正常执行
+    Running --> Checkpointing: 快照触发
+
+    Running --> WaitingTool: 等待工具返回
+    WaitingTool --> Running: 工具返回
+
+    Running --> Success: 任务完成
+    Running --> Failed: 不可恢复错误
+
+    Active --> Crashed: 进程异常终止
+    Crashed --> Restoring: 重启后恢复
+
+    Paused --> Crashed: 意外中断
+    WaitingTool --> Crashed: 超时/崩溃
+
+    Success --> [*]
+    Failed --> [*]
+
+    note right of Checkpointing
+        持久化：
+        - Context → SQLite
+        - Stack → Checkpoint
+        - Manifest → 存储
+    end note
+
+    note right of Restoring
+        恢复：
+        - 读取快照
+        - 校验 hash
+        - 反序列化
+        - 重置游标
+    end note
+```
+
+### 7.6 与 Claude Code 架构对比
+
+#### 7.6.1 mini-claude-code 的简化实现
+
+mini-claude-code 作为教学性质的简化实现，断点续传采用极简方案：
+
+```mermaid
+flowchart TD
+    subgraph mini["mini-claude-code 断点设计"]
+        A[单 JSON 文件<br/>checkpoint.json] --> B[每次工具调用后覆盖写入]
+        B --> C[存储内容：<br/>messages + pending + step_count]
+        C --> D[无版本管理<br/>无压缩<br/>无 hash 校验]
+    end
+```
+
+**简化实现代码结构：**
+
+```javascript
+// mini-claude-code 断点续传（伪代码）
+class CheckpointManager {
+    save(agentState) {
+        const checkpoint = {
+            messages: agentState.messages,
+            pending: agentState.pendingTools,
+            step: agentState.currentStep,
+            timestamp: Date.now()
+        };
+        fs.writeFileSync('checkpoint.json', JSON.stringify(checkpoint));
+    }
+
+    load() {
+        if (!fs.existsSync('checkpoint.json')) return null;
+        return JSON.parse(fs.readFileSync('checkpoint.json', 'utf8'));
+    }
+}
+```
+
+**简化代价：**
+- 无并发安全（覆盖写）
+- 无完整性校验（损坏不自知）
+- 无增量快照（每次全量）
+- 无跨会话恢复（只能恢复同一进程）
+
+#### 7.6.2 真实 Claude Code 的设计推测
+
+基于 Claude Code 的实际表现和行业最佳实践，真实实现应具备以下特性：
+
+| 维度 | mini 简化版 | 真实 Claude Code（推测） |
+|------|-------------|--------------------------|
+| **存储后端** | 单文件 JSON | SQLite + 文件系统混合 |
+| **快照策略** | 每次调用后全量写 | 增量 + 定期全量 + 关键节点 |
+| **完整性校验** | 无 | SHA-256 / BLAKE3 hash |
+| **版本管理** | 无 | 链式检查点 + GC 清理 |
+| **压缩** | 无 | LZ4 / zstd 压缩 |
+| **并发安全** | 无 | 事务锁 / Write-Ahead Log |
+| **恢复确认** | 直接加载 | LLM 确认恢复上下文正确 |
+| **容灾** | 仅本地 | 可选云端同步（S3） |
+
+**推测的 Claude Code 断点架构：**
+
+```mermaid
+flowchart TB
+    subgraph Storage["持久化层"]
+        WAL[Write-Ahead Log<br/>append-only]
+        Snap[Snapshot Store<br/>分块压缩]
+        Meta[Metadata DB<br/>SQLite]
+    end
+
+    subgraph Core["Checkpoint Engine"]
+        S1[快照触发器]
+        S2[差异计算器]
+        S3[压缩器]
+        S4[完整性校验器]
+    end
+
+    subgraph Recovery["恢复引擎"]
+        R1[检查点选择器]
+        R2[校验器]
+        R3[状态重建器]
+    end
+
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> WAL
+    S4 --> Snap
+    S4 --> Meta
+
+    R1 --> R2
+    R2 --> R3
+
+    Meta --> R1
+    Snap --> R2
+```
+
+---
+
 ## 附录：完整生命周期时序图
 
 ```mermaid
