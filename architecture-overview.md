@@ -4,40 +4,63 @@
 
 ---
 
-## 1. 总体架构图
+## 1. 全局系统架构总图（核心调用链）
 
 ```mermaid
-graph LR
-    User --> CLI
-    CLI --> Runtime
-    Runtime --> Agent
-    Agent --> Tools
-    Tools --> Memory
-    Memory -.-> Agent
-    Agent -.-> Runtime
-    Runtime -.-> CLI
-    CLI -.-> User
+graph TB
+    %% 用户层
+    User[用户] --> CLI[CLI<br/>命令行接口]
 
-    subgraph 用户层
-        User[用户]
-    end
+    %% 接口层
+    CLI --> Runtime[Runtime<br/>运行时核心]
+    Runtime --> QueryEngine[QueryEngine<br/>查询引擎]
 
-    subgraph 接口层
-        CLI[命令行界面]
-    end
+    %% 核心调度层
+    QueryEngine --> AgentManager[AgentManager<br/>Agent 管理器]
+    AgentManager --> ToolLayer[ToolLayer<br/>工具层]
 
-    subgraph 核心层
-        Runtime[运行时]
-        Agent[Agent 核心]
-    end
+    %% 能力层
+    ToolLayer --> Memory[Memory<br/>记忆系统]
+    ToolLayer --> LLM[LLM<br/>大语言模型]
 
-    subgraph 能力层
-        Tools[工具集]
-        Memory[记忆系统]
-    end
+    %% 反向反馈
+    Memory -.反馈.-> AgentManager
+    LLM -.生成.-> AgentManager
+    AgentManager -.决策.-> QueryEngine
+    QueryEngine -.结果.-> Runtime
+    Runtime -.响应.-> CLI
+    CLI -.输出.-> User
+
+    style User fill:#f8cecc,stroke:#b85450
+    style CLI fill:#e1d5e7,stroke:#9673a6
+    style Runtime fill:#dae8fc,stroke:#6c8ebf
+    style QueryEngine fill:#d5e8d4,stroke:#82b366
+    style AgentManager fill:#ffe6cc,stroke:#d79b00
+    style ToolLayer fill:#fff2cc,stroke:#d6b656
+    style Memory fill:#cce5ff,stroke:#4a90d9
+    style LLM fill:#e8d5f5,stroke:#9b59b6
 ```
 
-**说明：** 用户通过 CLI 与系统交互，请求经 Runtime 调度至 Agent 核心，Agent 调用 Tools 执行任务，Memory 管理上下文持久化。
+**完整调用链说明：**
+
+| 层级 | 组件 | 职责 |
+|------|------|------|
+| 用户层 | User | 发起请求、接收响应 |
+| 接口层 | CLI | 命令解析、交互转发 |
+| 核心层 | Runtime | 生命周期管理、会话控制 |
+| 引擎层 | QueryEngine | 查询理解、路由分发 |
+| 调度层 | AgentManager | Agent 创建/调度/回收 |
+| 能力层 | ToolLayer | 工具注册、调用执行 |
+| 支撑层 | Memory | 上下文存储、压缩摘要 |
+| 支撑层 | LLM | 推理生成、工具调用编排 |
+
+**数据流向：**
+1. `CLI` 接收用户命令 → 传递给 `Runtime`
+2. `Runtime` 初始化会话上下文 → 调用 `QueryEngine`
+3. `QueryEngine` 解析意图 → 分发给 `AgentManager`
+4. `AgentManager` 调度 Agent → 通过 `ToolLayer` 执行工具
+5. `ToolLayer` 必要时查询 `Memory`（上下文）或调用 `LLM`（生成）
+6. 结果逐层回传：`AgentManager → QueryEngine → Runtime → CLI → User`
 
 ---
 
@@ -117,29 +140,57 @@ flowchart LR
 
 ---
 
-## 架构组件关系
+## 5. 组件关系总图
 
 ```mermaid
 graph TD
-    CLI["CLI<br/>命令行接口"] --> Runtime["Runtime<br/>运行时核心"]
-    Runtime --> Agent["Agent<br/>智能代理"]
-    Agent --> Tools["Tools<br/>工具集"]
-    Agent --> Memory["Memory<br/>记忆系统"]
+    %% 用户交互
+    User([用户]) --> CLI["CLI<br/>命令行接口"]
 
-    Tools -->|"执行结果"| Agent
-    Memory -->|"上下文"| Agent
+    %% 核心层
+    CLI --> Runtime["Runtime<br/>运行时核心"]
+    Runtime --> QueryEngine["QueryEngine<br/>查询引擎"]
+    QueryEngine --> AgentManager["AgentManager<br/>Agent 管理器"]
 
-    Runtime -->|"调度控制"| Agent
-    CLI -->|"命令输入"| Runtime
-    Runtime -->|"执行反馈"| CLI
+    %% 执行层
+    AgentManager --> ToolLayer["ToolLayer<br/>工具层"]
+    ToolLayer --> LLM["LLM<br/>大语言模型"]
+    ToolLayer --> Memory["Memory<br/>记忆系统"]
 
+    %% 数据回流
+    Memory -.->|"上下文反馈"| AgentManager
+    LLM -.->|"生成结果"| AgentManager
+    AgentManager -.->|"任务决策"| QueryEngine
+    QueryEngine -.->|"结果输出"| Runtime
+    Runtime -.->|"执行反馈"| CLI
+    CLI -.->|"响应展示"| User([用户])
+
+    %% 样式
+    style User fill:#f8cecc,stroke:#b85450,color:#333
     style CLI fill:#e1d5e7,stroke:#9673a6
     style Runtime fill:#dae8fc,stroke:#6c8ebf
-    style Agent fill:#d5e8d4,stroke:#82b366
-    style Tools fill:#fff2cc,stroke:#d6b656
-    style Memory fill:#f8cecc,stroke:#b85450
+    style QueryEngine fill:#d5e8d4,stroke:#82b366
+    style AgentManager fill:#ffe6cc,stroke:#d79b00
+    style ToolLayer fill:#fff2cc,stroke:#d6b656
+    style Memory fill:#cce5ff,stroke:#4a90d9
+    style LLM fill:#e8d5f5,stroke:#9b59b6
 ```
+
+**关系说明：**
+
+| 关系 | 起点 | 终点 | 含义 |
+|------|------|------|------|
+| 命令输入 | CLI | Runtime | 用户命令下发 |
+| 调度控制 | Runtime | QueryEngine | 会话上下文初始化 |
+| 任务分发 | QueryEngine | AgentManager | 查询路由到 Agent 调度 |
+| 工具执行 | AgentManager | ToolLayer | Agent 触发工具调用 |
+| 上下文读取 | ToolLayer | Memory | 工具执行依赖历史上下文 |
+| 推理生成 | ToolLayer | LLM | 需要 LLM 参与的工具调用 |
+| 反馈回流 | Memory/LLM | AgentManager | 结果反馈给 Agent 决策 |
+| 决策升级 | AgentManager | QueryEngine | Agent 决策影响查询路由 |
+| 结果回传 | QueryEngine | Runtime | 最终结果注入运行时 |
+| 响应输出 | Runtime | CLI | 执行结果转为 CLI 输出 |
 
 ---
 
-*文档版本：基于 Claude Code 源码分析生成*
+*文档版本：v2.0 — 增强全局系统架构总图（核心调用链 + 组件关系总图）*

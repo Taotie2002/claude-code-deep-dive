@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-04-02 (v1.3)
+
+### Added
+- **QueryEngine深度分析**：[query-engine-deep-dive.md](./query-engine-deep-dive.md)
+  - Prompt构建 / Tool调用 / Retry逻辑 / Cost追踪
+- **Agent生命周期分析**：[agent-lifecycle.md](./agent-lifecycle.md)
+  - Spawn / Execute / Review / Fix / Terminate / Coordination
+  - 13个Mermaid图
+
+### Updated
+- **architecture-overview.md** - 全局系统架构总图增强
+  - CLI→Runtime→QueryEngine→AgentManager→Tool→Memory→LLM完整调用链
+
+---
+
 ## [1.2.0] - 2026-04-02 (v1.2)
 
 ### Added
