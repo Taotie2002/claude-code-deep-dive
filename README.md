@@ -91,13 +91,15 @@ python main.py
 
 ---
 
-## 📚 扩展文档
+## 📚 扩展文档（必读）
 
 | 文档 | 说明 |
 |------|------|
-| [architecture-overview.md](./architecture-overview.md) | 系统架构总览（4张Mermaid图） |
+| ⭐ [architecture-overview.md](./architecture-overview.md) | **系统架构总览（4张Mermaid图）** - 强烈建议先读 |
 | [behavior-analysis.md](./behavior-analysis.md) | 系统行为分析（7个行为流程图） |
 | [hidden-features.md](./hidden-features.md) | 隐藏功能与源码发现（8类发现） |
+| [data-flow-analysis.md](./data-flow-analysis.md) | 🆕 数据流分析（Prompt/Tool/Memory流） |
+| [system-behavior.md](./system-behavior.md) | 🆕 系统行为总结（Agent Loop/自修复机制） |
 
 ---
 

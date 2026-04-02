@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-04-02 (v1.2)
+
+### Added
+- **数据流分析**：[data-flow-analysis.md](./data-flow-analysis.md) - 7张Mermaid图
+  - Prompt Flow / Tool Flow / Memory Flow / Agent Communication Flow
+- **系统行为总结**：[system-behavior.md](./system-behavior.md) - 5大行为模式
+  - Agent Loop / Self-Healing / Task Lifecycle / Context Management Loop
+
+### Updated
+- README.md 扩展文档列表更新
+
+---
+
 ## [1.1.0] - 2026-04-02 (v1.1)
 
 ### Added
