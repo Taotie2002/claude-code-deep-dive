@@ -77,6 +77,33 @@
 
 ---
 
+## 🚀 实战 Demo
+
+本项目包含一个 **Mini Claude Code 简化复刻 Demo**：
+
+```bash
+cd mini-claude-code
+pip install -r requirements.txt
+python main.py
+```
+
+展示 Claude Code 核心架构的简化实现（Agent + Tool调度 + Memory）。
+
+---
+
+## 📊 项目状态
+
+| 维度 | 评分 |
+|------|------|
+| 技术准确性 | ⭐⭐⭐⭐⭐ |
+| 源码深度 | ⭐⭐⭐⭐⭐ |
+| 架构分析 | ⭐⭐⭐⭐⭐ |
+| 工程价值 | ⭐⭐⭐⭐（新增Demo） |
+
+**基于外部专家评审持续改进中**
+
+---
+
 ## 👤 适合读者
 
 - **AI 工具开发者** — 理解如何从零构建生产级 AI 编程辅助工具

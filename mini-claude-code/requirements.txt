@@ -1,0 +1,4 @@
+# Mini Claude Code Dependencies
+
+# Claude API Client
+anthropic>=0.18.0
