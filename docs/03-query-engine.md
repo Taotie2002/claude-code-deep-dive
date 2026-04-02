@@ -105,6 +105,33 @@ flowchart LR
     E --> F[API Request]
 ```
 
+**Prompt 构建完整时序：**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Caller as 调用方
+    participant QE as QueryEngine
+    participant FSP as fetchSystemPromptParts
+    participant Mem as Memory Mechanics
+    participant Builder as Prompt Builder
+    participant API as Claude API
+
+    Caller->>QE: submitMessage(prompt)
+    QE->>FSP: fetchSystemPromptParts()
+    FSP-->>QE: { defaultSystemPrompt, userContext, systemContext }
+    alt customPrompt !== undefined
+        QE->>Mem: loadMemoryPrompt()
+        Mem-->>QE: memoryMechanicsPrompt
+    end
+    QE->>Builder: asSystemPrompt([...prompts])
+    Builder->>Builder: 组装三层上下文
+    Note over Builder: systemPrompt + userContext + systemContext
+    Builder-->>QE: fullSystemPrompt
+    QE->>API: API Request with fullSystemPrompt
+    API-->>QE: Stream Response
+```
+
 #### 关键代码路径
 
 ```typescript
@@ -183,6 +210,56 @@ flowchart TD
     I -->|Allow| J[执行 Tool]
     I -->|Deny| K[返回权限拒绝]
     J --> L[返回结果]
+```
+
+**Tool 调用完整时序：**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Model as Claude Model
+    participant QE as QueryEngine
+    participant Finder as findToolByName
+    participant Validator as Schema Validator
+    participant Perm as canUseTool
+    participant Partitioner as partitionToolCalls
+    participant RunnerC as runToolsConcurrently
+    participant RunnerS as runToolsSerially
+    participant Tools as External Tools
+
+    Model->>QE: tool_use(name, input)
+    QE->>Finder: 查找工具定义
+    Finder-->>QE: toolDef | null
+    alt toolDef === null
+        QE-->>Model: 返回 Tool Not Found 错误
+    end
+    QE->>Validator: 验证 input schema
+    alt input 无效
+        Validator-->>QE: 验证错误
+        QE-->>Model: 返回验证错误
+    end
+    QE->>Perm: canUseTool(toolName)
+    Perm-->>QE: { behavior: 'allow' | 'deny' | 'ask' }
+    alt behavior === 'ask'
+        QE->>User: 显示权限对话框
+        User-->>QE: 授权 / 拒绝
+    end
+    QE->>Partitioner: partitionToolCalls(blocks)
+    Partitioner-->>QE: { isConcurrencySafe, blocks } 分组
+    loop 每个分组
+        alt isConcurrencySafe === true
+            QE->>RunnerC: 并发执行只读工具
+            RunnerC->>Tools: Tool A ∥ Tool B
+            Tools-->>RunnerC: results
+        else isConcurrencySafe === false
+            QE->>RunnerS: 串行执行写操作
+            RunnerS->>Tools: Tool A → Tool B
+            Tools-->>RunnerS: results
+        end
+        RunnerC-->>QE: toolResults
+        RunnerS-->>QE: toolResults
+    end
+    QE-->>Model: tool_use 结果
 ```
 
 ### 3.2 权限检查
@@ -293,6 +370,63 @@ flowchart TD
     I -->|No| K
     J -->|>=3| N[Model Fallback]
     J -->|<3| K
+```
+
+**Retry 决策完整时序：**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Caller as 调用方
+    participant WR as withRetry
+    participant API as Claude API
+    participant Fallback as Fallback Model
+    participant SelfHeal as Self-Heal
+
+    Caller->>WR: operation()
+    WR->>WR: 初始化重试参数
+    Note over WR: maxRetries=10, baseDelay=500ms
+    loop attempt <= maxRetries
+        WR->>API: API Request (attempt N)
+        API-->>WR: 响应 / 错误
+        alt 成功响应
+            API-->>Caller: 返回结果
+            break 流程结束
+        end
+        alt 401 认证失败
+            WR->>WR: 刷新 Token
+            WR->>WR: 重试
+        end
+        alt 429 Rate Limit
+            alt 非订阅用户
+                WR->>WR: 计算 delay (jitter)
+                WR->>WR: await delay
+            end
+        end
+        alt 529 Overloaded
+            WR->>WR: consecutive529Errors++
+            alt consecutive529Errors >= 3
+                WR->>Fallback: 触发 FallbackTriggeredError
+                Fallback-->>Caller: 降级模型响应
+                break 流程结束
+            end
+            WR->>WR: delay = BASE_DELAY * 2^(attempt-1) + jitter
+            WR->>WR: await delay
+        end
+        alt 400 Context Overflow
+            WR->>SelfHeal: context_overflow 恢复
+            SelfHeal->>SelfHeal: 计算可用空间
+            SelfHeal->>SelfHeal: 调整 max_tokens
+            WR->>WR: 重试
+        end
+        alt 其他 5xx 错误
+            WR->>WR: delay = BASE_DELAY * 2^(attempt-1) + jitter
+            WR->>WR: await delay
+        end
+    end
+    alt 达到最大重试次数
+        WR-->>Caller: 抛出最终错误
+    end
 ```
 
 #### 错误类型映射

@@ -11,6 +11,9 @@ Prompt Flow 描述从用户输入到 LLM 调用的完整数据变换路径。
 ### 1.1 System Prompt 构建流程
 
 ```mermaid
+---
+title: System Prompt 构建流程
+---
 flowchart TD
     subgraph 构建阶段
         A[基础 System Prompt 模板] --> B[加载项目上下文<br/>AGENTS.md / SOUL.md / TOOLS.md]
@@ -25,6 +28,9 @@ flowchart TD
 ### 1.2 用户输入 → 上下文组装 → LLM 调用
 
 ```mermaid
+---
+title: 用户输入 → 上下文组装 → LLM 调用
+---
 sequenceDiagram
     participant U as 用户输入
     participant C as Context Assembler
@@ -47,6 +53,9 @@ sequenceDiagram
 ### 1.3 Buddy System Prompt 注入机制
 
 ```mermaid
+---
+title: Buddy System Prompt 注入机制
+---
 flowchart LR
     subgraph 普通 Agent
         A1[Session Context] --> B1[Basic Prompt]
@@ -72,6 +81,9 @@ Tool Flow 描述从工具匹配到结果返回的完整调用链路。
 ### 2.1 工具调用总览
 
 ```mermaid
+---
+title: 工具调用总览
+---
 flowchart TD
     A[用户请求 / LLM 决策] --> B{请求类型判断}
     B -->|需要工具| C[Tool Matcher]
@@ -96,6 +108,9 @@ flowchart TD
 ### 2.2 BashTool 调用链
 
 ```mermaid
+---
+title: BashTool 调用链
+---
 sequenceDiagram
     participant LLM
     participant TM as Tool Matcher
@@ -119,6 +134,9 @@ sequenceDiagram
 ### 2.3 FileTool 调用链
 
 ```mermaid
+---
+title: FileTool 调用链
+---
 sequenceDiagram
     participant LLM
     participant C as Context Assembler
@@ -141,6 +159,9 @@ sequenceDiagram
 ### 2.4 AgentTool / Subagent 调用链
 
 ```mermaid
+---
+title: AgentTool / Subagent 调用链
+---
 flowchart TD
     A[LLM 请求 spawn subagent] --> B[Agent Registry]
     B --> C[创建子 Agent 实例]
@@ -163,6 +184,9 @@ Memory Flow 描述会话记忆的生成、压缩、持久化与召回过程。
 ### 3.1 记忆全生命周期
 
 ```mermaid
+---
+title: 记忆全生命周期
+---
 flowchart LR
     subgraph 生成
         A[对话消息] --> B[自动提取]
@@ -191,6 +215,9 @@ flowchart LR
 ### 3.2 记忆召回与遗忘
 
 ```mermaid
+---
+title: 记忆召回与遗忘
+---
 sequenceDiagram
     participant U as 用户输入
     participant QA as Query Analyzer
@@ -211,6 +238,9 @@ sequenceDiagram
 ### 3.3 自动记忆提取流程
 
 ```mermaid
+---
+title: 自动记忆提取流程
+---
 flowchart TD
     A[会话结束 / 关键节点] --> B[分析对话内容]
     B --> C[提取实体与关系]
@@ -232,6 +262,9 @@ Agent Communication Flow 描述多 Agent 环境下的消息传递、权限同步
 ### 4.1 Agent 间消息传递
 
 ```mermaid
+---
+title: Agent 间消息传递
+---
 sequenceDiagram
     participant M as Main Agent
     participant MQ as Message Queue
@@ -250,6 +283,9 @@ sequenceDiagram
 ### 4.2 权限同步机制
 
 ```mermaid
+---
+title: 权限同步机制
+---
 flowchart TD
     subgraph 权限来源
         A[User 授权] --> B[Permission Store]
@@ -275,6 +311,9 @@ flowchart TD
 ### 4.3 状态同步与 Mailbox 机制
 
 ```mermaid
+---
+title: 状态同步与 Mailbox 机制
+---
 flowchart LR
     subgraph Agent A
         A1[Mailbox Inbox] --> A2[Message Handler]
@@ -302,6 +341,9 @@ flowchart LR
 ### 4.4 Multi-Agent Routing 架构
 
 ```mermaid
+---
+title: Multi-Agent Routing 架构
+---
 flowchart TD
     subgraph 用户层
         U[用户 / Telegram]
@@ -337,6 +379,9 @@ flowchart TD
 ## 5. 综合数据流总图
 
 ```mermaid
+---
+title: 综合数据流总图
+---
 flowchart TD
     subgraph 用户层
         U[用户消息]
