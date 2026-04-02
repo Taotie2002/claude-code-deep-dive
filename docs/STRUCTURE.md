@@ -31,4 +31,4 @@
 
 ## 信源导航
 
-详见 `source-annotation-spec.md` 和 `source-index.md`
+详见 `source-annotation-spec.md` 和 `architecture-inference-index.md`

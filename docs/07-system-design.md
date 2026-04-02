@@ -475,7 +475,7 @@ flowchart LR
 | TypeScript | 需要编译 | 原生支持 | 无需额外构建步骤 |
 | 包管理 | npm/yarn/pnpm | 内置 | 统一的工具链 |
 | 运行时 | V8 | JavaScriptCore | 不同的优化方向 |
-| 兼容性 | 100% | 95%+ | Node 兼容性更好 |
+| 兼容性 | 100% | 95%[推测]+ | Node 兼容性更好 |
 
 ```mermaid
 graph TD
