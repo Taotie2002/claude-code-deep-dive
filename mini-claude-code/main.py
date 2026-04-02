@@ -82,7 +82,7 @@ def demo_agent_basic() -> None:
     
     # 创建 Agent 配置
     config = AgentConfig(
-        model="claude-sonnet-4-20250514",
+        model="claude-3-5-sonnet-20241022",
         verbose=True,
         system_prompt="""You are a helpful coding assistant.
 You have access to various tools to help users with their tasks.
@@ -134,7 +134,7 @@ def demo_full_agent_session() -> None:
     
     # 创建 Agent
     config = AgentConfig(
-        model="claude-sonnet-4-20250514",
+        model="claude-3-5-sonnet-20241022",
         verbose=True,
         system_prompt="""You are a helpful coding assistant specialized in Python.
 Keep responses concise and practical."""
@@ -186,7 +186,7 @@ memory.remember("用户的项目使用 Django 框架", memory_type="context")
 
 # 2. 创建 Agent 配置
 config = AgentConfig(
-    model="claude-sonnet-4-20250514",
+    model="claude-3-5-sonnet-20241022",
     max_tokens=2048,
     verbose=True,
     system_prompt="你是一个 Django 开发专家"

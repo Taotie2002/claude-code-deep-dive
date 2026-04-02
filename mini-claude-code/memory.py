@@ -259,12 +259,18 @@ class PersistentMemory:
     
     def search(self, query: str, limit: int = 5) -> list[MemoryEntry]:
         """
-        搜索记忆 - 简单关键词匹配
+        搜索记忆 - 简化版关键词匹配（教学演示用）
         
+        注意：这是简化的教学演示。
         真实 Claude Code 使用向量嵌入进行语义搜索：
-        - embed text -> vector
+        - embed text -> vector (使用 OpenAI embeddings 或类似服务)
         - cosine similarity
         - return top-k results
+        
+        要实现完整语义搜索，需要：
+        1. 接入 embedding 服务（如 OpenAI、Sentence-Transformers）
+        2. 预计算所有 memory entry 的向量
+        3. 使用 FAISS 或类似向量数据库
         
         参考: src/memdir/memdirIndex.ts
         """

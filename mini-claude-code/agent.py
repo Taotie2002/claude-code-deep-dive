@@ -103,7 +103,7 @@ class AgentConfig:
     
     参考: src/schemas/ 中的 Zod schemas
     """
-    model: str = "claude-sonnet-4-20250514"
+    model: str = "claude-3-5-sonnet-20241022"
     max_tokens: int = 4096
     temperature: float = 1.0
     system_prompt: str = "You are a helpful coding assistant."

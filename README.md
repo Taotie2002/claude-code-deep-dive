@@ -2,11 +2,28 @@
 
 > 从源码深处理解 AI 编程工具的设计哲学与工程实践
 
+---
+
+**⚠️ 重要法律与道德免责声明**
+
+**本项目纯属个人学习与技术研究目的**，**不代表 Anthropic 官方立场**，**与 Anthropic 公司无任何关联**。
+
+- 本项目基于公开渠道获取的 Claude Code 相关信息及社区讨论进行**架构分析与技术解读**，旨在帮助开发者理解 AI 编程工具的工程设计理念与最佳实践。
+- 项目中所有代码、文档、Mini Demo 均为**原创教学示例**，供学习参考使用。
+- 本项目**不提供任何 Claude Code 原始源码**，也不鼓励或支持任何侵犯知识产权、违反服务条款或泄露商业机密的行为。
+- 作者已尽最大努力确保内容基于公开信息，但**不保证信息的完整性、准确性或时效性**。
+- **使用本项目及其内容完全由用户自行承担风险**。
+- 如您发现本项目内容可能涉及知识产权问题，请及时联系作者，我们将立即处理。
+
+本项目遵循 [MIT License](LICENSE) 开源，仅供**非商业、教育和研究**用途。
+
+---
+
 [![Stars](https://img.shields.io/github/stars/Taotie2002/claude-code-deep-dive?style=social)](https://github.com/Taotie2002/claude-code-deep-dive/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/Taotie2002/claude-code-deep-dive)](https://github.com/Taotie2002/claude-code-deep-dive/graphs/contributors)
 
-这是一本基于 Claude Code **泄露源码**的系统性技术教程。通过对源码的逐模块分析，深入探讨 AI 编程工具的架构设计、工程实践与设计哲学。
+这是一本基于 Claude Code **公开信息与社区讨论**的系统性技术教程。通过对 Claude Code 架构的深入分析，探讨 AI 编程工具的架构设计、工程实践与设计哲学。
 
 ---
 

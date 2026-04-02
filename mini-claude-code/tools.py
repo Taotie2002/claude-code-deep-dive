@@ -271,7 +271,7 @@ class ToolExecutor:
             if isinstance(result, ToolResult):
                 return result
             else:
-                return ToolResult(content=str(result))
+                return ToolResult(content=str(result), success=True)
         
         except Exception as e:
             return ToolResult(
