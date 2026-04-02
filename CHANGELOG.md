@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-04-02 (v1.4)
+
+### Added
+- **系统设计总结**：[system-design.md](./system-design.md)
+  - 设计哲学（5项）
+  - 系统特点（4项）
+  - Claude Code优势（4项）
+  - 架构决策回顾（3项）
+  - AI Agent领域启示（3项）
+  - 17个Mermaid图表
+
+---
+
 ## [1.3.0] - 2026-04-02 (v1.3)
 
 ### Added
