@@ -25,7 +25,7 @@ class JudgeResult:
     """评判结果"""
     score: float              # 0.0-1.0 综合评分
     passed: bool             # 是否通过
-   维度_scores: dict         # 各维度评分
+    dimension_scores: dict         # 各维度评分
     reasoning: str           # 评判理由
     suggestions: list[str]   # 改进建议
     metadata: dict = field(default_factory=dict)

@@ -19,6 +19,21 @@
 
 ---
 
+### 🔍 信源透明度声明
+
+本书采用**四级信源标注体系**（详见 [docs/source-annotation-spec.md](./docs/source-annotation-spec.md)）：
+
+| 等级 | 标签 | 依据 | 说明 |
+|------|------|------|------|
+| L1 | 🟢 源码实证 | 泄露源码 | 代码行级别可直接验证的结论 |
+| L2 | 🟡 源码推断 | 泄露源码 | 跨文件关联、结构暗示推断的结论 |
+| L3 | 🔵 社区共识 | GitHub/Discord/Reddit | 社区广泛认同的观察与讨论 |
+| L4 | ⚪ 合理推测 | 架构模式 | 基于已知设计模式的逻辑外推 |
+
+> ⚠️ **非官方立场**：本书所有结论均为研究推演，**不代表 Anthropic 官方立场**，与 Anthropic 公司无任何关联。
+
+---
+
 [![Stars](https://img.shields.io/github/stars/Taotie2002/claude-code-deep-dive?style=social)](https://github.com/Taotie2002/claude-code-deep-dive/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/Taotie2002/claude-code-deep-dive)](https://github.com/Taotie2002/claude-code-deep-dive/graphs/contributors)
