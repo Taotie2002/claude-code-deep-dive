@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-04-02 (v1.5)
+
+### Added
+- **Agent对比分析**：[comparison.md](./comparison.md)
+  - Claude Code vs Devin/Cursor/AutoGPT/GitHub Copilot/Cody/Tabnine
+  - 10+张对比表格
+  - 选型决策树
+  - Claude Code独特优势总结
+
+---
+
 ## [1.4.0] - 2026-04-02 (v1.4)
 
 ### Added
