@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2026-04-02 (v1.6)
+
+### Added
+- **GitHub Actions CI**: [.github/workflows/ci.yml](./.github/workflows/ci.yml)
+  - ruff lint check
+  - pytest test runner
+- **pyproject.toml**: [mini-claude-code/pyproject.toml](./mini-claude-code/pyproject.toml)
+  - 包管理配置
+  - ruff lint规则
+  - pytest配置
+- **pytest基础测试**: [tests/test_tools.py](./mini-claude-code/tests/test_tools.py)
+
+### Fixed
+- **免责声明同步**: 在 claude-code-deep-dive.md 和 architecture-overview.md 开头添加免责
+
+---
+
 ## [1.5.0] - 2026-04-02 (v1.5)
 
 ### Added
