@@ -1,6 +1,6 @@
 # Claude Code 行为分析与架构推演
 
-> 通过黑盒观测与工程经验，探索 AI 编程工具的设计哲学与工程实践
+> 通过分析源代码，探索 AI 编程工具的设计哲学与工程实践
 
 ---
 
@@ -23,7 +23,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/Taotie2002/claude-code-deep-dive)](https://github.com/Taotie2002/claude-code-deep-dive/graphs/contributors)
 
-这是一本基于 Claude Code **公开信息与社区讨论**的系统性技术教程，通过黑盒观测与架构推演，探讨 AI 编程工具的架构设计、工程实践与设计哲学。
+这是一本基于 Claude Code **公开信息与社区讨论**的系统性技术学习手册，通过源码分析、黑盒观测验证与架构推演，探讨 AI 编程工具的架构设计、工程实践与设计哲学。
 
 ---
 
